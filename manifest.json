@@ -6,7 +6,9 @@
   "permissions": [
     "storage",
     "tabs",
-    "scripting"
+    "scripting",
+    "windows",
+    "system.display"
   ],
   "host_permissions": [
     "https://www.doubao.com/*",
