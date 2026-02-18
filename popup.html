@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI聚合查询</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 400px;
+            min-height: 300px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 20px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .ai-status {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .ai-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+            position: relative;
+        }
+
+        .ai-item:hover {
+            background: #e9ecef;
+        }
+
+        .ai-item .checkbox-wrapper {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+
+        .ai-item .checkbox-wrapper input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .ai-item .name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+
+        .ai-item .status {
+            color: #999;
+        }
+
+        .ai-item .status.ready {
+            color: #4CAF50;
+        }
+
+        .ai-item .status.loading {
+            color: #FF9800;
+        }
+
+        .ai-item.disabled {
+            opacity: 0.5;
+        }
+
+        .tips {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 11px;
+            color: #856404;
+        }
+
+        .tips strong {
+            display: block;
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI聚合查询</h1>
+        <p class="subtitle">一键同时查询多个AI助手</p>
+
+        <div class="input-group">
+            <textarea id="queryInput" placeholder="请输入您的问题..."></textarea>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" id="openAllBtn">
+                <span>🚀</span> 同时打开三个AI
+            </button>
+            <button class="btn-secondary" id="clearBtn">
+                <span>🗑️</span> 清空
+            </button>
+        </div>
+
+        <div class="ai-status">
+            <div class="ai-item" data-site="doubao" data-url="https://www.doubao.com/chat/">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="doubao-checkbox" checked>
+                </div>
+                <div class="name">🔴 豆包</div>
+                <div class="status" id="doubao-status">点击打开</div>
+            </div>
+            <div class="ai-item" data-site="deepseek" data-url="https://chat.deepseek.com/">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="deepseek-checkbox" checked>
+                </div>
+                <div class="name">🔵 DeepSeek</div>
+                <div class="status" id="deepseek-status">点击打开</div>
+            </div>
+            <div class="ai-item" data-site="kimi" data-url="https://www.kimi.com/">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="kimi-checkbox" checked>
+                </div>
+                <div class="name">🟢 Kimi</div>
+                <div class="status" id="kimi-status">点击打开</div>
+            </div>
+        </div>
+
+        <div class="tips">
+            <strong>💡 提示：</strong>
+            勾选要使用的AI，点击上方任一 AI 可单独打开；输入问题后点「同时打开三个AI」会打开选中的AI并自动填充
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "AI聚合查询工具",
+  "version": "1.0.0",
+  "description": "一键同时查询豆包、Kimi、DeepSeek三个AI助手",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.doubao.com/*",
+    "https://chat.deepseek.com/*",
+    "https://www.kimi.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.doubao.com/*"],
+      "js": ["content-doubao.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://chat.deepseek.com/*"],
+      "js": ["content-deepseek.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.kimi.com/*"],
+      "js": ["content-kimi.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
