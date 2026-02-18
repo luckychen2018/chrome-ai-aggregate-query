@@ -140,27 +140,57 @@
                     (element.textContent || element.innerText || '').trim() :
                     (element.value || '').trim();
                 
+                console.log('[豆包] 当前输入框内容长度:', currentText.length, '内容预览:', currentText.substring(0, 20));
+                
                 if (currentText.length > 0) {
                     // 再次等待确保React状态更新
                     setTimeout(function() {
+                        // 再次验证内容是否还在
+                        const verifyText = element.isContentEditable ? 
+                            (element.textContent || element.innerText || '').trim() :
+                            (element.value || '').trim();
+                        
+                        if (verifyText.length === 0) {
+                            console.log('[豆包] 内容已消失，可能被清空，重试');
+                            isProcessing = false;
+                            attempts++;
+                            setTimeout(checkAndFill, CHECK_INTERVAL);
+                            return;
+                        }
+                        
+                        console.log('[豆包] 准备发送消息，内容:', verifyText.substring(0, 30));
+                        // 发送消息
                         sendMessage(element);
                         hasSent = true;
                         
+                        // 等待足够长时间确保消息已发送成功
+                        // 豆包会在消息发送成功后自动清空输入框
                         setTimeout(function() {
-                            clearInput(element);
-                            chrome.storage.local.remove(['query']);
-                            setTimeout(function() {
-                                isProcessing = false;
-                                hasSent = false;
-                            }, 1000);
-                        }, 500);
-                    }, 500);
+                            // 检查输入框是否已被清空（说明消息已发送）
+                            const stillHasText = element.isContentEditable ? 
+                                (element.textContent || element.innerText || '').trim().length > 0 :
+                                (element.value || '').trim().length > 0;
+                            
+                            console.log('[豆包] 发送后检查，输入框还有文字:', stillHasText);
+                            
+                            // 清理storage
+                            chrome.storage.local.remove(['query'], function() {
+                                console.log('[豆包] 已清理storage');
+                            });
+                            
+                            // 重置标志，允许下次提问（无论发送成功与否）
+                            isProcessing = false;
+                            hasSent = false;
+                            console.log('[豆包] 重置标志，可以处理下次提问');
+                        }, 2500); // 等待2.5秒，确保消息已发送
+                    }, 1000); // 发送前等待1秒，确保内容稳定
                 } else {
+                    console.log('[豆包] 内容未设置成功，重试');
                     isProcessing = false;
                     attempts++;
                     setTimeout(checkAndFill, CHECK_INTERVAL);
                 }
-            }, 300);
+            }, 500); // 增加初始等待时间
         });
     }
 
@@ -168,21 +198,59 @@
         // 优先查找发送按钮
         const sendButton = findSendButton();
         if (sendButton) {
+            console.log('[豆包] 找到发送按钮，准备点击');
             clickButton(sendButton);
+            // 同时发送Enter键作为备用
+            setTimeout(function() {
+                element.focus();
+                const enterEvent = new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    keyCode: 13,
+                    which: 13,
+                    bubbles: true,
+                    cancelable: true
+                });
+                element.dispatchEvent(enterEvent);
+            }, 200);
             return;
         }
         
         // 如果没有按钮，发送Enter键
+        console.log('[豆包] 未找到发送按钮，使用Enter键');
         element.focus();
-        const enterEvent = new KeyboardEvent('keydown', {
-            key: 'Enter',
-            code: 'Enter',
-            keyCode: 13,
-            which: 13,
-            bubbles: true,
-            cancelable: true
-        });
-        element.dispatchEvent(enterEvent);
+        setTimeout(function() {
+            // 发送完整的键盘事件序列
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+            });
+            const keypressEvent = new KeyboardEvent('keypress', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+            });
+            const keyupEvent = new KeyboardEvent('keyup', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+            });
+            
+            element.dispatchEvent(keydownEvent);
+            element.dispatchEvent(keypressEvent);
+            element.dispatchEvent(keyupEvent);
+            console.log('[豆包] 已发送Enter键事件');
+        }, 100);
     }
 
     function findSendButton() {
@@ -234,21 +302,57 @@
     }
 
     function clickButton(btn) {
+        // 确保按钮可见且可用
+        if (!isButtonVisible(btn)) {
+            console.log('[豆包] 按钮不可见或不可用');
+            return;
+        }
+        
         btn.focus();
-        btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-        btn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-        btn.click();
+        setTimeout(function() {
+            // 模拟完整的鼠标事件序列
+            const mouseDownEvent = new MouseEvent('mousedown', { 
+                bubbles: true, 
+                cancelable: true,
+                view: window,
+                buttons: 1
+            });
+            const mouseUpEvent = new MouseEvent('mouseup', { 
+                bubbles: true, 
+                cancelable: true,
+                view: window,
+                buttons: 1
+            });
+            const clickEvent = new MouseEvent('click', { 
+                bubbles: true, 
+                cancelable: true,
+                view: window,
+                buttons: 1
+            });
+            
+            btn.dispatchEvent(mouseDownEvent);
+            setTimeout(function() {
+                btn.dispatchEvent(mouseUpEvent);
+                setTimeout(function() {
+                    btn.dispatchEvent(clickEvent);
+                    // 也调用原生click方法
+                    btn.click();
+                    console.log('[豆包] 已点击发送按钮');
+                }, 50);
+            }, 50);
+        }, 100);
     }
 
-    function clearInput(element) {
-        if (element.isContentEditable) {
-            element.textContent = '';
-            element.innerText = '';
-        } else {
-            element.value = '';
-        }
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    // 不再主动清空输入框，让豆包自动处理
+    // function clearInput(element) {
+    //     if (element.isContentEditable) {
+    //         element.textContent = '';
+    //         element.innerText = '';
+    //     } else {
+    //         element.value = '';
+    //     }
+    //     element.dispatchEvent(new Event('input', { bubbles: true }));
+    // }
 
     function checkAndFill() {
         if (attempts >= MAX_ATTEMPTS) {
